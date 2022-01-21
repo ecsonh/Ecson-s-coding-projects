@@ -1,0 +1,611 @@
+PYTHON
+
+import sys
+from collections import namedtuple
+import datetime
+
+Penalty = namedtuple('Penalty', ['curse', 'point_deduction']) #curse(str), point_deduction(int)
+
+no_penalty = Penalty("None", 0)
+one_day_penalty = Penalty("Ear-Shrivelling", 10)
+two_day_penalty = Penalty("Hair Loss", 20)
+three_day_penalty = Penalty("Curse of the Bogies", 30)
+four_day_penalty = Penalty("Slug-Vomiting", 50)
+five_day_penalty = Penalty("Book Return", 80)
+
+Book = namedtuple('Book', ['title', 'author', 'year_published', 'subject', 'section']) #title(str), author(str), year_published(int), subject(str), section(str)
+Checkout = namedtuple('Checkout', ['title', 'student_name', 'due_date']) #book(Book), student(Student), due_date(datetime.date)
+Student = namedtuple('Student', ['student_name', 'house', 'checked_out_books']) #student_name(str), house(str), checked_out_books(list=[])
+Penalty = namedtuple('Penalty', ['curse', 'point_deduction']) #curse(str), point_deduction(int)
+Hold = namedtuple('Hold',['title', 'student_name', 'number_of_days'])
+book_collection = {}
+library_members = {}
+checkouts = {}
+hold_request = {}
+library_passcodes = ["Accio", "Protego"]
+date1 = [] #SD command
+def hogwarts_library(script_name):
+    with open(script_name, 'r') as f:
+        read = f.read()
+    for i in read.split('\n'):
+        command = i.strip()[0:2].upper()
+        the_rest = i.strip()[2:]
+        if command == "NB":
+            command_nb(the_rest)
+        elif command == "LI":
+            command_li(the_rest)
+        elif command == "DB":
+            command_db(the_rest)
+        elif command == "FB":
+            command_fb(the_rest)
+        elif command == "AS":
+            command_as(the_rest)
+        elif command == "LM":
+            command_lm(the_rest)
+        elif command == "PL":
+            command_pl(the_rest)
+        elif command == "SD":
+            command_sd(the_rest)
+        elif command == "CB":
+            command_cb(the_rest)
+        elif command == "CR":
+            command_cr(the_rest)
+        elif command == "LA":
+            command_la(the_rest)
+        elif command == "DT":
+            command_dt(the_rest)
+        elif command == "AD":
+            command_ad(the_rest)
+        elif command == "RH":
+            command_rh(the_rest)
+        elif command == "HR":
+            command_hr(the_rest)
+        elif command == "RB":
+            command_rb(the_rest)
+        elif command == "OR":
+            command_or(the_rest)
+        elif command == "UR":
+            command_ur(the_rest)
+        elif command == "DR":
+            command_dr(the_rest)
+        elif command == "**":
+            continue
+        elif command =='':
+            continue
+
+#----------------------------------------------------STAGE FIVE-----------------------------------------------------
+def command_ur(command):
+    student = command.strip().split('=')[1]
+    date = ' '.join(map(str, date1))
+    month = date.split('/')[0]
+    day = int(date.split('/')[1])
+    year = date.split('/')[2]
+    if student not in library_members.keys():
+        print(student+'is not a registered member of the library.')
+        return
+    exceed = 0
+    print("{:*^60}".format("USER REPORT for "+ student))
+    sorted_checkouts = {k: checkouts[k] for k in sorted(checkouts)}
+    for i in checkouts:
+        if student == checkouts[i].student_name:
+            due_day = int(checkouts[i].due_date.split('/')[1])
+            if day > due_day:
+                exceed = day - due_day
+    if exceed > 0:                    
+        if exceed == 1:
+            print(student + ' Curse: '+one_day_penalty.curse)
+        elif exceed == 2:
+            print(student + ' Curse: '+two_day_penalty.curse)
+        elif exceed == 3:
+            print(student + ' Curse: '+three_day_penalty.curse)
+        elif exceed == 4:
+            print(student + ' Curse: '+four_day_penalty.curse)
+        elif exceed >= 5:
+            print(student + ' Curse: '+five_day_penalty.curse)
+        elif exceed== 0:
+            print(student + ' Curse: '+no_penalty.curse)
+    count = []
+    print('-------------------------CHECKOUTS--------------------------')
+    for i in sorted_checkouts:
+        if student == sorted_checkouts[i].student_name:
+            print("{title:<35}{due_date:>25}".format(title = sorted_checkouts[i].title, due_date = sorted_checkouts[i].due_date))
+            count.append('1')
+    if len(count) == 0:
+        print( "No checkouts.")
+    print('---------------------------HOLDS----------------------------')
+    count1 = []
+    for i in hold_request:
+        if student == hold_request[i].student_name:
+            print("{title:<35}{num:>25}".format(title = hold_request[i].title, num = hold_request[i].number_of_days))
+            count1.append('1')
+    if len(count1) == 0:
+        
+        print( "No holds.")
+        
+def command_dr(command):
+    day = command.split(',')
+    start = datetime.datetime.strptime(day[0].split('=')[1], "%m/%d/%Y")
+    end = datetime.datetime.strptime(day[1].split('=')[1], "%m/%d/%Y")
+    count = 0
+    print('***BOOKS DUE BETWEEN********'+day[0].split('=')[1]+' to '+ day[1].split('=')[1] +'********')
+    for i in checkouts:
+        due = datetime.datetime.strptime(checkouts[i].due_date, "%m/%d/%Y")
+        if start <= due <= end:
+            print("{title:<35}{name:>25}".format(title = checkouts[i].title, name = checkouts[i].student_name))
+            count = 1
+    if count == 0:
+        print('No books due for the given dates.')
+#----------------------------------------------------STAGE THREE-----------------------------------------------------
+def command_rh(command): 
+    temp = {}
+    for i in command.strip().split(','):
+        if i.split('=')[0] == 'title':
+            temp['title'] = i.split('=')[1]
+        elif i.split('=')[0] == 'student_name':
+            temp['student_name'] = i.split('=')[1]
+        elif i.split('=')[0] == 'number_of_days':
+            temp['number_of_days'] = int(i.split('=')[1])
+    if 'number_of_days' not in temp.keys():
+        temp['number_of_days'] = 14
+    for i in checkouts:
+        if temp['student_name'] == checkouts[i].student_name and temp['title'] == checkouts[i].title:
+            print(temp['student_name'] + ' currently has checked out'+temp['title'] + '.')
+            return
+        
+    for i in hold_request:
+        if temp['student_name'] == hold_request[i].student_name and temp['title'] == hold_request[i].title:
+            print(hold_request[i].student_name+" has already requested a hold for "+ hold_request[i].title+'.')
+            return
+    if temp['title'] not in book_collection:
+        print(temp['title']+" not in inventory.")
+    elif temp['student_name'] not in library_members:
+        print(temp['student_name']+" is not a registered library member.")
+    elif temp['title'] not in checkouts:
+        print(temp['title'] + ' is available to be checked out. Use command to checkout book.')
+    else:
+        newHold = Hold(temp['title'], temp['student_name'], temp['number_of_days'])
+        hold_request[temp['student_name']+temp['title']] = newHold
+
+    return hold_request
+
+
+def command_hr(command):# Hold Requests Report
+    date = ' '.join(map(str, date1)) 
+    month = date.split('/')[0]
+    day = date.split('/')[1] #add 0
+    if int(day.strip()) < 10 and len(day)==1:
+        day = '0' + day
+    year = date.split('/')[2]
+    day1 = '{}/{}/{}'.format(month.strip(), day.strip(), year.strip())
+    print('*****HOLD REQUEST REPORT****************'+day1+'**********')
+    print('Student Name                         # of Days Requested')
+    sorted_hold = dict(sorted(hold_request.items(), key=lambda item: item[1])) #sort value
+    list1 = []
+    if len(hold_request) != 0:
+        for i in hold_request: # title that different students hold
+            if sorted_hold[i].title not in list1:
+                print('------------------------------------------------------------')
+                print(sorted_hold[i].title)
+                list1.append(hold_request[i].title)
+                for j in hold_request:
+                    if hold_request[i].title == hold_request[j].title:
+                        print("{name:<33}{number_of_days:^27}".format(name = hold_request[j].student_name, number_of_days = hold_request[j].number_of_days))
+    print('------------------------------------------------------------')
+    if len(hold_request) == 0:
+        print('                    No Holds Requested. ')
+        
+
+def command_rb(command): #return book
+    date = ' '.join(map(str, date1))
+    month = date.split('/')[0]
+    day = date.split('/')[1]
+    year = date.split('/')[2]
+    return_book = command.split('=')[1]
+    hold_requestv = dict(sorted(hold_request.items(), key=lambda x: x[1])) #sort value
+    sorted_hold = {k: hold_requestv[k] for k in sorted(hold_requestv)} #sort key
+    if return_book in checkouts and return_book in book_collection:
+        for i in hold_request.copy():
+            if return_book == hold_request[i].title:
+                del checkouts[return_book]
+                new_due = int(day.strip()) + int(hold_request[i].number_of_days)
+                due1 = '{}/{}/{}'.format(month.strip(), str(new_due), year.strip())
+                newCheckOut = Checkout(hold_request[i].title, hold_request[i].student_name,due1)
+                checkouts[hold_request[i].title] = newCheckOut
+                del hold_request[i]
+                return checkouts
+                break
+        if return_book not in hold_request:
+            del checkouts[return_book]
+                # remove curse
+    else:
+        print( "Invalid Return Request for "+return_book+'.')
+    return (checkouts, hold_request)
+
+
+def command_or(command): # overdue report
+    date = ' '.join(map(str, date1))
+    month = date.split('/')[0]
+    day = date.split('/')[1]
+    if int(day.strip()) < 10 and len(day)==1:
+        day = '0' + day
+    year = date.split('/')[2]
+    day1 = '{}/{}/{}'.format(month.strip(), day.strip(), year.strip())
+    print('********OVERDUE REPORT*************'+day1+'*******# Days**')
+    count = 0
+    due_today = int(day.strip())
+    sorted_checkouts = {k: checkouts[k] for k in sorted(checkouts)}
+    for i in sorted_checkouts:
+        if len(sorted_checkouts[i].student_name)>15:
+            st = sorted_checkouts[i].student_name[:15]
+        else:
+            st = sorted_checkouts[i].student_name
+        due_day = int(sorted_checkouts[i].due_date.split('/')[1])
+        if due_today > due_day:
+            past_due = due_today - due_day
+
+            print("{title:<30}{name:^20}{due_date:>10}".format(title = sorted_checkouts[i].title, name = st, due_date = past_due))
+            count =1
+    if count != 1:
+        print("                    No books overdue today.")
+    
+    
+
+#----------------------------------------------------STAGE TWO-----------------------------------------------------
+
+
+
+def command_sd(command): #start date 
+    date1.append(command) 
+    month = command.split('/')[0]
+    day = command.split('/')[1]
+    year = command.split('/')[2]
+    ans = datetime.date(int(year.strip()), int(month.strip()), int(day.strip()))#convert 12 / 09 / 2020  to Wednesday 09, December 2020
+    day_of_word = ans.strftime('%A %d') + ', '+ ans.strftime("%B %Y")
+    print("*************HOGWARTS LIBRARY MANAGEMENT SYSTEM*************")
+    print("{:*^60s}".format(day_of_word))
+    return date1
+
+
+def command_cb(command): #check out books create a namedtuple to store checkout books
+    temp = {}
+    date = ' '.join(map(str, date1)) 
+    month = date.split('/')[0]
+    day = date.split('/')[1]
+    year = date.split('/')[2]
+    for each in command.strip().split(","):
+        if each.split("=")[0] == 'title':
+            temp['title'] = each.split("=")[1]
+        elif each.split("=")[0] == "student_name":
+            temp['student_name'] = each.split("=")[1]
+        elif each.split("=")[0] == 'pass_code':
+            temp['pass_code'] = each.split("=")[1]
+        elif each.split("=")[0] == 'number_of_days':
+            temp['number_of_days'] = each.split("=")[1]
+    for i in book_collection: #check if the checkout book is valid and available
+        if temp['title'] == book_collection[i].title:
+            if temp['student_name'] not in hold_request:
+                if temp['student_name'] in library_members.keys():
+                    if temp['title'] not in checkouts: #make sure the book and the students both correct(exist)
+                        if book_collection[i].section == 'Non-Restricted':
+                            if 'number_of_days' in temp.keys(): #number_of_days is num of days for borrowing the book
+                                if (int(day.strip())+int(temp['number_of_days'])) < 10:
+                                    day1 = '0'+ str(int(day.strip())+int(temp['number_of_days']))
+                                else:
+                                    day1 = str(int(day.strip())+int(temp['number_of_days']))
+                                due_date = '{}/{}/{}'.format(month.strip(), day1, year.strip())
+                            elif 'number_of_days' not in temp.keys(): # if the checkout book has no number_of_days, we set number_of_days to 12days(instruction)
+                                due_date = '{}/{}/{}'.format(month.strip(), str(int(day.strip()) + 14), year.strip())
+                            newCheckOut = Checkout(temp['title'], temp['student_name'],due_date)
+                            checkouts[temp['title']] = newCheckOut 
+                        elif book_collection[i].section == 'Restricted':
+                            if 'pass_code' not in temp.keys():
+                                print(i+' is a Restricted book, and requires a pass code to be checked out.')
+                            elif temp['pass_code'] not in library_passcodes:#check if no pass_code for restricted books
+                                print('NoAccess is not a valid pass code.')
+                            elif temp['pass_code'] in library_passcodes:
+                                if 'number_of_days' in temp.keys(): #number_of_days is num of days for borrowing the book
+                                    if (int(day.strip())+int(temp['number_of_days'])) < 10:
+                                        day1 = '0'+ str(int(day.strip())+int(temp['number_of_days']))
+                                    else:
+                                        day1 = str(int(day.strip())+int(temp['number_of_days']))
+                                    due_date = '{}/{}/{}'.format(month.strip(), day1, year.strip())
+                                elif 'number_of_days' not in temp.keys(): # if the checkout book has no number_of_days, we set number_of_days to 12days(instruction)
+                                    due_date = '{}/{}/{}'.format(month.strip(), str(int(day.strip()) + 14), year.strip())
+                                newCheckOut = Checkout(temp['title'], temp['student_name'],due_date)
+                                checkouts[temp['title']] = newCheckOut 
+                    elif temp['title'] in checkouts:
+                        print(temp['title']+' is currently unavailable to be checked out.')
+                elif temp['student_name'] not in library_members.keys():
+                    print(temp['student_name']+' is not a registered library member.')
+            elif temp['student_name'] in hold_request:
+                print(temp['student_name']+ ' has already requested a hold for '+temp['title'])
+        elif temp['title'] not in book_collection:
+            print(temp['title']+' not in inventory.')
+            break
+    return checkouts
+    
+
+def command_cr(command):#list out book, student name, due_date
+    date = ' '.join(map(str, date1)) 
+    month = date.split('/')[0]
+    day = date.split('/')[1] #add 0
+    if int(day.strip()) < 10 and len(day)==1:
+        day = '0' + day
+    year = date.split('/')[2]
+    day1 = '{}/{}/{}'.format(month.strip(), day.strip(), year.strip())
+    print('***CURRENT CHECKOUT REPORT**************' + day1 + '**********')
+    if len(checkouts) == 0:
+        print('                   No Books Checked Out.')
+    print('Book Title                        Student Name      Due Date')
+    print('------------------------------------------------------------')
+    G = []
+    H = []
+    R = []
+    S = []
+    for title, nice in checkouts.items():
+        house = library_members[nice.student_name]
+        if house == 'Gryffindor':
+            G.append((nice.student_name, nice.title))
+        elif house == 'Hufflepuff':
+            H.append((nice.student_name, nice.title))
+        elif house == 'Ravenclaw':
+            R.append((nice.student_name, nice.title))
+        elif house == 'Slytherin':
+            S.append((nice.student_name, nice.title))
+            
+    G.sort()
+    H.sort()
+    R.sort()
+    S.sort()
+    for i in G:
+        check = checkouts[i[1]]
+        if len(check.title) >30:
+            stitle = check.title[:30]
+        else:
+            stitle = check.title
+        print("{title:<30}{name:^20}{due_date:>10}".format(title = stitle, name = check.student_name, due_date = check.due_date))
+    
+    for i in H:
+        check = checkouts[i[1]]
+        if len(check.title) >30:
+            stitle = check.title[:30]
+        else:
+            stitle = check.title
+        print("{title:<30}{name:^20}{due_date:>10}".format(title = stitle, name = check.student_name, due_date = check.due_date))
+    
+    for i in R:
+        check = checkouts[i[1]]
+        if len(check.title) >30:
+            stitle = check.title[:30]
+        else:
+            stitle = check.title
+        print("{title:<30}{name:^20}{due_date:>10}".format(title = stitle, name = check.student_name, due_date = check.due_date))
+    
+    for i in S:
+        check = checkouts[i[1]]
+        if len(check.title) >30:
+            stitle = check.title[:30]
+        else:
+            stitle = check.title
+
+        print("{title:<30}{name:^20}{due_date:>10}".format(title = stitle, name = check.student_name, due_date = check.due_date))
+
+
+def command_la(command): #list the books left in book_collection after some books get checked out
+    sorted_collection = {k: book_collection[k] for k in sorted(book_collection)}
+    for i in book_collection.copy(): #del books from the book collection if the book is checked out
+        if sorted_collection[i].title in checkouts.keys(): # if dict of sorted book collection equals dict of checkout, remove the book from book collection
+            del sorted_collection[i]
+    available = len(sorted_collection) 
+    print('Number of books in available: ', available)
+    if available != 0:
+        for i in sorted_collection:
+            print('------------------------------------')
+            print('Title: ', sorted_collection[i].title)
+            print('Author: ' + sorted_collection[i].author)
+            print('Date:', int(sorted_collection[i].year_published))
+            print('Subject: ' + sorted_collection[i].subject)
+            print('Section: ' + sorted_collection[i].section)
+   
+    print('------------------------------------')
+
+
+def command_dt(command): #books due 
+    date = ' '.join(map(str, date1)) 
+    month = date.split('/')[0]
+    day = date.split('/')[1] #add 0
+    if int(day.strip()) < 10 and len(day)==1:
+        day = '0' + day
+    year = date.split('/')[2]
+    day1 = '{}/{}/{}'.format(month.strip(), day.strip(), year.strip())
+    count = 0
+    print('*******BOOKS DUE TODAY******************'+ day1 +'**********')#*******BOOKS DUE TODAY******************12/09/2020**********
+    for i in checkouts:
+        if str(day1) == str(checkouts[i].due_date):
+            print("{title:<35}{name:>25}".format(title = checkouts[i].title, name = checkouts[i].student_name))
+            count =1
+    if count==0:
+        print("                    No books due today.")
+
+def command_ad(command): # books due a day after
+    date = ' '.join(map(str, date1)) 
+    print('*************HOGWARTS LIBRARY MANAGEMENT SYSTEM*************')
+    adv_date = '{}/{}/{}'.format(date.split('/')[0], str(int(date.split('/')[1])+1), date.split('/')[2])
+    month, day, year = (int(x) for x in adv_date.split('/'))    
+    ans = datetime.date(year, month, day)
+    advance = ans.strftime('%A %d') + ', '+ ans.strftime("%B %Y")
+    print("{:*^60s}".format(advance))
+    date1[0] = adv_date
+    return date1
+
+
+#----------------------------------------------------STAGE ONE-----------------------------------------------------
+
+
+
+def command_nb(command):
+    if command.strip().split(",")[0].split("=")[1] in book_collection:
+        print (command.strip().split(",")[0].split("=")[1] + " already present.")
+        return 
+    temp = []
+    for each in command.strip().split(","):
+        temp.append(each.split("=")[1])
+    newBook = Book(temp[0], temp[1],temp[2], temp[3],temp[4])
+    book_collection[temp[0]] = newBook
+    return book_collection
+   
+
+def command_li(command):
+    print('*********************LIBRARY INVENTORY**********************')
+    sorted_collection = {k: book_collection[k] for k in sorted(book_collection)}
+    print('Number of books available: ', len(sorted_collection))
+    if len(sorted_collection) != 0:
+        for i in sorted_collection:
+            print('------------------------------------')
+            print('Title: ', sorted_collection[i].title)
+            print('Author: ' + sorted_collection[i].author)
+            print('Date:', int(sorted_collection[i].year_published))
+            print('Subject: ' + sorted_collection[i].subject)
+            print('Section: ' + sorted_collection[i].section)
+   
+    print('------------------------------------')
+        
+
+    
+def command_db(command): # delete book from book_collection
+    count = 0
+    for i in hold_request.copy():
+        if command.strip().split('=')[1] == hold_request[i].title:
+            del hold_request[i]
+    for i in checkouts.copy():
+        if command.strip().split('=')[1] == checkouts[i].title:
+            del checkouts[i]
+    for i in book_collection.copy():
+        if command.strip().split('=')[1] == book_collection[i].title:
+            del book_collection[i]
+            count = 1
+            break
+    if count == 0:    
+        print(command.strip().split('=')[1] +" Not Found. Cannot be deleted.")
+    
+    return (book_collection, checkouts, hold_request)
+  
+    
+
+
+def command_fb(command): # if find book that has the same criteria as found in book collection
+    print('************************BOOK SEARCH*************************')
+
+    tofind = command.split(',')
+    
+    if len(command) == 1:
+        print('Number of books found: ', len(book_collection))
+        kk = book_collection.keys()
+        collect = list(kk)
+        collect.sort()
+        print('------------------------------------')
+        for key in collect:
+            print('Title:', book_collection[key].title)
+            print('Author:', book_collection[key].author)
+            print('Date:', book_collection[key].year_published)
+            print('Subject:', book_collection[key].subject)
+            print('Section:', book_collection[key].section)
+            print('------------------------------------')
+        return
+    
+    found = dict(book_collection)
+    for info in tofind:
+        data = info.split('=')
+        if data[0].strip() in ['title', 'author', 'year_published', 'subject', 'section']:
+            for i in book_collection:
+                criteria = data[0].strip()
+                if i in found:
+                    if criteria == 'title':
+                        if found[i].title != data[1]:
+                            del found[i]
+                    if criteria == 'author':
+                        if found[i].author != data[1]:
+                            del found[i]
+                    if criteria == 'subject':
+                        if found[i].subject != data[1]:
+                            del found[i]
+                    if criteria == 'section':
+                        if found[i].section != data[1]:
+                            del found[i]
+                    if criteria == 'year_published':
+                        if found[i].year_published != data[1]:
+                            del found[i]
+                    
+    sortl = list(found.keys())
+    sortl.sort()
+    print('Number of books found: ', len(sortl))
+    print('------------------------------------')
+    for i in sortl:
+        print('Title:', book_collection[i].title)
+        print('Author:', book_collection[i].author)
+        print('Date:', book_collection[i].year_published)
+        print('Subject:', book_collection[i].subject)
+        print('Section:', book_collection[i].section)
+        print('------------------------------------')
+
+
+def command_as(command): #add new student with their address to dict of library_members
+    student, house = command.strip().split(",")
+    if student.split("=")[1] in library_members.keys():
+        print("V is already present.")
+    elif student.split("=")[1] not in library_members.keys():
+        library_members[student.split("=")[1]] = house.split("=")[1]#key student value house
+    return library_members
+
+
+def command_lm(command): #prints members according to each house, sorted by house and member name.
+    count1 = 0
+    count2 = 0
+    count3 = 0
+    count4 = 0
+    library_member = {k: library_members[k] for k in sorted(library_members)}
+    print('**********************LIBRARY MEMBERS***********************')
+    print('Gryffindor:')
+    for i in library_member.keys():
+        if 'Gryffindor' == library_member[i]: # word equals dictionary key
+            print(i)
+            count1 = 1
+    if count1 == 0:
+        print("No Registered Members")
+    
+    print('Hufflepuff:')
+    for i in library_member.keys():
+        if 'Hufflepuff' == library_member[i]:
+            print(i)
+            count2 = 1
+    if count2 == 0:
+        print("No Registered Members")
+    
+    print('Ravenclaw:')
+    for i in library_member.keys():
+        if 'Ravenclaw' == library_member[i]:
+            print(i)
+            count3 = 1
+    if count3 == 0:
+        print("No Registered Members")
+    
+    print('Slytherin:')
+    for i in library_member.keys():
+        if 'Slytherin' == library_member[i]:
+            print(i)
+            count4 = 1
+    if count4 == 0:
+        print("No Registered Members")
+    
+
+def command_pl(command):
+    if command != '':
+        print(command.strip())
+    else:
+        print('\n')
+
+if __name__ == "__main__":
+    script_name = sys.argv[1]
+    hogwarts_library(script_name)
+
+
