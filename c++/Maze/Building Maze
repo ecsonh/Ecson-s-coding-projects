@@ -1,0 +1,124 @@
+#include <ics46/factory/DynamicFactory.hpp>
+#include "MG.hpp"
+#include "MazeGenerator.hpp"
+#include "Maze.hpp"
+#include "Direction.hpp"
+#include <random>
+#include <algorithm>
+#include <iostream>
+
+ICS46_DYNAMIC_FACTORY_REGISTER(MazeGenerator, EHMazeGenerator, "EHMazeGenerator(Required)");
+
+EHMazeGenerator::EHMazeGenerator()
+{
+}
+void EHMazeGenerator::generateMaze(Maze& maze)
+{
+    initializeMaze(maze.getHeight(), maze.getWidth(), maze);
+    generatePath(0,0,maze);
+}
+
+void EHMazeGenerator::initializeMaze(int x, int y, Maze& maze)
+{
+    maze.addAllWalls();
+    board_size = 0;
+    std::vector<std::vector<int>> a(y, std::vector<int>(x));
+    for (int i = 0; i < y; ++i)
+    {
+        for (int j = 0; j < x; ++j)
+        {
+            a[i][j] = 0;
+            board_size++;
+        }
+    }
+    visited = a;
+
+}
+void EHMazeGenerator::find_direction(int& x, int& y, Direction& dir)
+{
+ 
+    if(dir == Direction::up)
+    {
+        y = y-1; 
+    }
+    else if(dir == Direction::down)
+    {
+        y = y+1;
+    }
+    else if(dir == Direction::right)
+    {
+        x = x+1;
+    }
+    else if(dir == Direction::left)
+    {
+        x = x-1;
+    }
+}
+template<typename T>
+T random(std::vector<T> const &v)
+{
+    srand(time(NULL));
+    int r = rand() % v.size();
+    return v[r];
+}
+std::vector<Direction> EHMazeGenerator::possible_move(int x, int y, Maze& maze)
+{
+    std::vector<Direction> possibleMove;
+    if(y >= 1 && visited[x][y-1] == 0 && maze.wallExists(x, y, Direction::up))
+    {
+        possibleMove.push_back(Direction::up);
+    }
+    if(y < maze.getHeight()-1 && visited[x][y+1] == 0  && maze.wallExists(x, y, Direction::down))
+    {
+        possibleMove.push_back(Direction::down);
+    }
+    if(x < maze.getWidth()-1 && visited[x+1][y] == 0  && maze.wallExists(x, y, Direction::right))
+    {
+        possibleMove.push_back(Direction::right);
+    }
+    if(x >= 1 && visited[x-1][y] == 0  && maze.wallExists(x, y, Direction::left))
+    {
+        possibleMove.push_back(Direction::left);
+    }
+    return possibleMove;
+}
+
+
+void EHMazeGenerator::generatePath(int x, int y, Maze& maze)
+{
+    if(board_size > 1)
+    {
+        int nextx = x;
+        int nexty = y;
+        visited[x][y] = 1;// current cell visit
+
+        std::vector<Direction> p = possible_move(x, y, maze);
+
+        if(p.size() != 0)
+        {
+            Direction dir = random(p);
+            find_direction(nextx, nexty, dir);
+            maze.removeWall(x, y, dir);
+            board_size--;
+            generatePath(nextx, nexty, maze);
+        }
+        else
+        {
+            for (int i = 0; i < maze.getWidth(); ++i)
+            {
+                for (int j = 0; j < maze.getHeight(); ++j)
+                {
+                    if (visited[i][j] == 1 && possible_move(i, j, maze).size()>0)
+                    {
+                        x = i;
+                        y = j;
+                        break;
+                    }
+                }
+            }
+                
+            generatePath(x, y, maze);
+        }
+        
+    }
+}
