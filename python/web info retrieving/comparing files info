@@ -1,0 +1,27 @@
+import re
+
+#the run time of the function is O(n)
+#this function takes in two valid file as strings and return the number of common words
+def findMatch(file1:str, file2:str) -> int:
+    with open(file1, "r") as f1:
+       token_list1 = [re.sub(r'^[\W_]+|[\W_]+$', '', word.lower())  for word in f1.read().split()]
+    with open(file2, "r") as f2:
+       token_list2 = [re.sub(r'^[\W_]+|[\W_]+$', '', word.lower())  for word in f2.read().split()]
+    common = set(token_list1) & set(token_list2) # this is one of the most efficient way to find the matching word
+
+    return len(common)
+
+
+
+
+if __name__ == '__main__':
+    #here takes in two files
+    file1 = input("Enter the first file that you want to compare.")
+    file2 = input("Enter the second file that you want to compare.")
+    assert len(file1) > 0 and len(file2) > 0, "Filename can't be empty"
+    assert file1.isalnum() and file2.isalnum(), "Invalid file"
+    #print the output
+    result = findMatch(file1,file2)
+    print("Number of Common Words: ", result)
+
+
