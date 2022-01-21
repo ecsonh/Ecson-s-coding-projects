@@ -1,0 +1,158 @@
+from utilities import place_random, print_board
+
+DEV_MODE = False
+
+
+
+def main(game_board: [[int, ], ]) -> [[int, ], ]:
+    """
+    2048 main function, runs a game of 2048 in the console.
+
+    Uses the following keys:
+    w - shift up
+    a - shift left
+    s - shift down
+    d - shift right
+    q - ends the game and returns control of the console
+    :param game_board: a 4x4 2D list of integers representing a game of 2048
+    :return: returns the ending game board
+    """
+    move = {"a": left(game_board),
+            "d": right(game_board),
+            "w": up(game_board),
+            "s": down(game_board)}
+    # Initialize board's first cell
+
+  
+    if DEV_MODE:
+        # This line of code handles the input of the develop mode.
+        column, row, value = (int(i) for i in input("column,row,value:").split(','))
+
+    else:
+        #generate a random piece and location using the place_random function
+        random_piece = place_random(game_board)
+        game_board[random_piece["row"]][random_piece["column"]] = random_piece["value"]
+        random_piece = place_random(game_board)
+        game_board[random_piece["row"]][random_piece["column"]] = random_piece["value"]
+        # place the piece at the specified location
+        print_board(game_board)
+        pass
+
+    # Initialize game state trackers
+    # Game Loop
+    while not game_over(game_board):
+        # Reset user input variable
+        user_move = input("Please make a move: ").lower()
+        while user_move not in ["w", "a", "s", "d", "q"]:
+            user_move = input("Invalid move!!\nPlease make another move: ").lower()
+        if user_move == "q":
+            break
+        elif user_move == "a":
+            game_board = left(game_board)
+        elif user_move == "d":
+            game_board = right(game_board)
+        elif user_move == "w":
+            game_board = up(game_board)
+        elif user_move == "s":
+            game_board = down(game_board)
+
+        # Take computer's turn
+        # place a random piece on the board
+        # check to see if the game is over using the game_over function
+        try:
+            random_piece = place_random(game_board)
+            game_board[random_piece["row"]][random_piece["column"]] = random_piece["value"]
+        except Exception:
+            break
+
+        # TODO: Show updated board using the print_board function
+        print_board(game_board)
+        # TODO: Take user's turn
+        # Take input until the user's move is a valid key
+        # if the user quits the game, print Goodbye and stop the Game Loop
+        # Execute the user's move
+
+        # Check if the user wins
+    print("Game Over")
+    return game_board
+
+
+def game_over(game_board: [[int, ], ]) -> bool:
+    """
+    Query the provided board's game state.
+
+    :param game_board: a 4x4 2D list of integers representing a game of 2048
+    :return: Boolean indicating if the game is over (True) or not (False)
+    """
+    # TODO: Loop over the board and determine if the game is over
+    if any(2048 in row for row in game_board):
+        return true
+    elif not h_move_possible(game_board) and not v_move_possible(game_board):
+        return truw
+    return False    # TODO: Don't always return false
+
+def stack(game_board):
+    updated_board = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
+    for i in range(4):
+        non_zero = 0
+        for j in range(4):
+            if game_board[i][j] != 0:
+                updated_board[i][non_zero] = game_board[i][j]
+                non_zero += 1
+    return updated_board
+
+def combine(game_board):
+    for i in range(4):
+        for j in range(3):
+            if game_board[i][j] != 0 and game_board[i][j] == game_board[i][j+1]:
+                game_board[i][j] *= 2
+                game_board[i][j+1] = 0
+    return game_board
+
+def reverse(game_board):
+    reverse_board = []
+    for i in range(4):
+        reverse_board.append([])
+        for j in range(4):
+            reverse_board[i].append(game_board[i][3-j])
+    return reverse_board
+
+def transpose(game_board):
+    tranpose_board = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
+    for i in range(4):
+        for j in range(4):
+            tranpose_board[i][j] = game_board[j][i]
+    return tranpose_board
+
+def left(game_board):
+    return stack(combine(stack(game_board)))
+
+def right(game_board):
+    return reverse(stack(combine(stack(reverse(game_board)))))
+
+def up(game_board):
+    return transpose(stack(combine((stack(transpose(game_board))))))
+
+def down(game_board):
+    return transpose((reverse((stack(combine((stack((reverse((transpose(game_board))))))))))))
+
+def h_move_possible(game_board):
+    for i in range(4):
+        for j in range(3):
+            if game_board[i][j] == game_board[i][j+1]:
+                return True
+    return False
+
+def v_move_possible(game_board):
+    for i in range(3):
+        for j in range(4):
+            if game_board[i][j] == game_board[i+1][j]:
+                return True
+    return False
+
+
+if __name__ == "__main__":
+    main([[0, 0, 0, 0],
+          [0, 0, 0, 0],
+          [0, 0, 0, 0],
+          [0, 0, 0, 0]])
