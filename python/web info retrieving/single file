@@ -1,0 +1,42 @@
+import re
+#the runtime of the loop inside this function is O(n)
+#this function can read files that have multiple words or one word in each line
+#the assertion will handle any exception input and it will take in strings
+def tokenized(file:str) -> list:
+    with open(file, "r") as f:
+       token_list = [re.sub(r'^[\W_]+|[\W_]+$', '', word.lower()) for word in f.read().split()]
+    return token_list
+
+#the runtime of the only forloop inside this function is O(n)
+#this function turns the token list into a dictionary that counts the repeated words
+#it takse in list and returns a dictionary
+def computeWordFrequencies(listoftoken:list) -> dict:
+    token_dict = {}
+    for token in listoftoken:
+        if token in token_dict:
+            token_dict[token] += 1
+        else:
+            token_dict[token] = 1
+    return token_dict
+
+#the runtime of this sorted dictionary is O(n log n)
+#the function print out all the words followed by the reapeted number from high to low
+#it takes in a dictionary and print out the result
+def printToken(dictoftoken:dict):
+    print("Token Frequency from high to low")
+    for k,v in sorted(dictoftoken.items(),key = lambda x:x[1], reverse = True):
+        print(k, "=>", v)
+
+
+
+if __name__ == '__main__':
+    #takes in a file as input
+    filename = input("Enter a file that you want to open.")
+    assert len(filename) > 0, "Filename can't be empty"
+    assert filename.isalnum(), "Invalid file"
+    #read file into a list of token
+    file = tokenized(filename)
+    #convert the list into a dictionary with repeat count
+    fileDict = computeWordFrequencies(file)
+    #print out the result
+    printToken(fileDict)
