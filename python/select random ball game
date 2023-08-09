@@ -1,0 +1,160 @@
+import prompt
+from goody import irange
+from collections import defaultdict
+
+
+# List Node class and helper functions (to set up problem)
+
+class LN:
+    def __init__(self,value,next=None):
+        self.value = value
+        self.next  = next
+
+def list_to_ll(l):
+    if l == []:
+        return None
+    front = rear = LN(l[0])
+    for v in l[1:]:
+        rear.next = LN(v)
+        rear = rear.next
+    return front
+
+def str_ll(ll):
+    answer = ''
+    while ll != None:
+        answer += str(ll.value)+'->'
+        ll = ll.next
+    return answer + 'None'
+
+
+
+# Tree Node class and helper functions (to set up problem)
+
+class TN:
+    def __init__(self,value,left=None,right=None):
+        self.value = value
+        self.left  = left
+        self.right = right
+
+def list_to_tree(alist):
+    if alist == None:
+        return None
+    else:
+        return TN(alist[0],list_to_tree(alist[1]),list_to_tree(alist[2])) 
+    
+def str_tree(atree,indent_char ='.',indent_delta=2):
+    def str_tree_1(indent,atree):
+        if atree == None:
+            return ''
+        else:
+            answer = ''
+            answer += str_tree_1(indent+indent_delta,atree.right)
+            answer += indent*indent_char+str(atree.value)+'\n'
+            answer += str_tree_1(indent+indent_delta,atree.left)
+            return answer
+    return str_tree_1(0,atree) 
+
+
+# Define append_ordered ITERATIVELY
+
+def append_ordered(ll,v):
+    nv = LN(v)
+    if ll is None:
+        return LN(v)
+    elif ll.value >= nv.value:
+        nv.next = ll
+        ll = nv
+    else:
+        current = ll
+        while(current.next is not None and current.next.value < nv.value):
+            current = current.next
+         
+        nv.next = current.next
+        current.next = nv
+    return ll
+
+        
+
+
+# Define append_ordered RECURSIVELY
+
+def append_ordered_r(ll,v):
+    if ll == None:
+        return LN(v)
+    elif v > ll.value:
+        ll.next = append_ordered_r(ll.next, v)
+        return ll
+    else:
+        return LN(v, ll)
+
+
+
+# Define max_depth RECURSIVELY
+
+def max_depth(tree,value):
+
+    if tree == None:
+        return -1
+    l = max_depth(tree.left, value)
+    r = max_depth(tree.right, value)
+    if tree.value == value:
+        return 1 + max(l,r)
+    elif l > -1:
+        return 1 + max(l,r)
+    elif r > -1:
+        return 1 + max(l,r)
+    else:
+        return max(l,r) 
+    
+
+    
+
+
+
+from tkinter import StringVar
+
+# Define StringVar_WithHistory
+
+class StringVar_WithHistory(StringVar):
+    def __init__(self):
+        StringVar.__init__(self)
+        self.history = [] 
+                             # value at [-1] is most recent value
+        
+    def set (self,value): 
+        if self.get() != value:
+            StringVar.set(self,value)
+            self.history.append(value)           # append new value as most recent
+        
+    def undo (self):
+        if len(self.history) > 1:
+            self.history.pop(-1)                      # remove most recent
+            StringVar.set(self,self.history[-1])      # restore new most recent
+
+
+
+
+# OptionMenuUndo: acts like an OptionMenu, but also allows undoing the most recently
+#   selected option, all the way back to the title (whose selection cannot be undone).
+# It overrides the __init__ method and defines the new methods get, undo, and 
+#   simulate_selections.
+# It will work correctly if StringVar_WithHistory is defined correctly
+from tkinter import OptionMenu
+class OptionMenuUndo(OptionMenu):
+    def __init__(self,parent,title,*option_tuple,**configs):
+        self.result = StringVar_WithHistory()
+        self.result.set(title)
+        OptionMenu.__init__(self,parent,self.result,*option_tuple,**configs)
+
+    # Get the current option  
+    def get(self):                
+        return self.result.get() # Call get on the StringVar_WithHistory attribute
+
+    # Undo the most recent option
+    def undo(self):
+        self.result.undo()       # Call undo on the StringVar_WithHistory attribute
+      
+    # Simulate selecting an option (mostly for test purposes)
+    def simulate_selection(self,option):
+        self.result.set(option)  # Call set on the StringVar_WithHistory attribute
+

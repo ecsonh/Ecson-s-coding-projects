@@ -1,0 +1,746 @@
+
+# Ecson Hsu
+# ecsonh
+
+
+.data
+string: .asciiz "str:"
+pattern_str: .asciiz "\tpattern:"
+newline: .asciiz "\n"
+return_zero: .asciiz "return (0,0)\n"
+return_front: .asciiz "return ("
+return_end: .asciiz ")\n"
+comma: .asciiz ", "
+one_c: .asciiz "1,"
+one: .asciiz "1"
+return_one_zero: .asciiz "return (1,0)\n"
+
+
+##############################
+# PART 1 FUNCTIONS
+##############################
+.text
+find_glob:
+    addi $sp $sp,-40
+    sw $a0, 0($sp) #str
+    sw $a1, 4($sp) #pattern
+    sw $a2, 8($sp) #@
+    sw $s0, 16($sp) #str length
+    sw $s1, 20($sp) #pattern length
+    sw $s3, 24($sp) #match1
+    sw $s4, 28($sp)#glob1
+    sw $s5, 32($sp) #match2
+    sw $s6, 36($sp)#glob2
+    sw $ra, 12($sp)
+    
+    la $a0, string 
+    li $v0, 4
+    syscall
+    
+    lw $a0, 0($sp) #print str
+    li $v0, 4
+    syscall
+    
+    la $a0, pattern_str
+    li $v0, 4
+    syscall
+    
+    lw $a1, 4($sp)
+    move $a0, $a1
+    li $v0, 4
+    syscall
+    
+    la $a0, newline
+    li $v0, 4
+    syscall
+    
+    lw $a0, 0($sp)
+    lw $a1, 4($sp)
+    move $t3, $a0 #temp str
+    move $t4, $a1 #temp pattern
+    li $s0, -1
+    li $s1, -1
+length1:
+    lbu $t0, 0($t3)
+    addi $t3, $t3, 1
+    addi $s0, $s0, 1
+    beqz $t0, length2
+    j length1
+    
+length2:
+    lbu $t0, 0($t4)
+    addi $t4, $t4, 1
+    addi $s1, $s1, 1
+    beqz $t0, l_end
+    j length2
+    
+l_end:
+    bnez $s0, x1 #str length != 0
+    beqz $s1, no #pattern length ==0
+    j yes
+x1:
+    beqz $s1, yes #pattern length ==0
+    bnez $s1, no
+    
+yes:
+    la $a0, return_zero
+    li $v0, 4
+    syscall
+    
+    li $v0, 0
+    li $v1, 0
+    j finish
+    
+no:
+    addi $t7, $0, 1
+    bne $s1, $t7, if1 #length pattern ==1
+    lw $a1, 4($sp)
+    lbu $t0, 0($a1) #load char from pattern
+    lbu $a2, 8($sp)
+    bne $t0, $a2, if1 #pattern[0] == wildcard
+    
+    la $a0, return_front
+    li $v0, 4
+    syscall
+    
+    la $a0, one_c
+    li $v0, 4
+    syscall
+    
+    move $a0, $s0 #print string length
+    li $v0, 1
+    syscall
+    
+    la $a0, return_end
+    li $v0, 4
+    syscall
+    
+    li $v0, 1
+    move $v1, $s0 #return (1,length of str)
+    
+    j finish
+    
+if1:
+    lw $a0, 0($sp)
+    lw $a1, 4($sp)
+
+    jal equals
+    beqz $v0, recursive
+    
+    la $a0, return_one_zero
+    li $v0, 4
+    syscall
+    
+    li $v0, 1
+    li $v1, 0
+    
+    j finish
+    
+recursive:
+    lw $a0, 0($sp)
+    lw $a1, 4($sp)
+    lbu $t5, 0($a0) #str
+    lbu $t6, 0($a1) #pattern
+    bne $t5, $t6, if2
+    addi $a0, $a0, 1 #increment on str
+    addi $a1, $a1, 1
+    lbu $a2, 8($sp)
+    jal find_glob
+    
+    j finish
+   
+if2:
+    lw $a2, 8($sp)
+    lw $a1, 4($sp)
+    lw $a0, 0($sp)
+    lbu $t0, 0($a1) #load char from pattern
+    bne $t0, $a2, over_f1 #if char from pattern != wildcard
+    addi $a1, $a1, 1 #patter[1:]
+    jal find_glob
+    move $s3, $v0
+    move $s4, $v1
+    #if(match)
+    beqz $s3, else_f1 #match ==0
+    
+    la $a0, return_front
+    li $v0, 4
+    syscall
+    
+    move $a0, $s3 #print match1
+    li $v0, 1
+    syscall
+    
+    la $a0, comma
+    li $v0, 4
+    syscall
+    
+    move $a0, $s4
+    li $v0, 1
+    syscall
+    
+    la $a0, return_end
+    li $v0, 4
+    syscall
+    #move $s3, $v0
+    #move $s4, $v1
+    move $v0, $s3
+    move $v1, $s4
+    j finish
+    
+else_f1:
+#no found
+    #addi $s5, $0, 1 #match2 =1
+    #addi $s6, $s6,1 #glob2 +1
+    lw $a0, 0($sp)
+    addi $a0, $a0, 1 #str increment
+    lw $a1, 4($sp)
+    lbu $a2, 8($sp)
+    jal find_glob
+    move $s5, $v0
+    move $s6, $v1
+    
+
+    la $a0, return_front
+    li $v0, 4
+    syscall
+    
+    move $a0, $s5 #print match2
+    li $v0, 1
+    syscall
+    
+    la $a0, comma
+    li $v0, 4
+    syscall
+    
+    addi $s6, $s6, 1
+    move $a0, $s6 #glob2
+    li $v0, 1
+    syscall
+
+    la $a0, return_end
+    li $v0, 4
+    syscall
+    move $v0, $s5
+    move $v1, $s6
+    j finish
+over_f1:
+    la $a0, return_zero
+    li $v0, 4
+    syscall
+    
+    li $v0, 0
+    li $v1, 0
+    
+finish:
+    lw $s0, 16($sp) #str length
+    lw $s1, 20($sp) #pattern length
+    lw $s3, 24($sp) #match1
+    lw $s4, 28($sp)#glob1
+    lw $s5, 32($sp) #match2
+    lw $s6, 36($sp)#glob2
+    lw $ra, 12($sp)
+    addi $sp $sp,40
+    jr $ra
+
+##############################
+# PART 2 FUNCTIONS
+##############################
+
+preorder:
+    #Define your code here
+    addi $sp, $sp,-24
+    sw $a0, 0($sp) #node
+    sw $a1, 4($sp) #index
+    sw $s0, 12($sp) #value
+    sw $s1, 16($sp) #left
+    sw $s2, 20($sp)#right
+    sw $ra, 8($sp)
+    
+    sll $a1, $a1, 2
+    add $a0, $a1, $a0
+    lhu $s0, 0($a0) #the value
+    lbu $s1, 3($a0)
+    lbu $s2, 2($a0)
+    move $a0, $s0
+    li $v0, 1
+    syscall
+    
+    la $a0, newline
+    li $v0, 4
+    syscall
+    
+    beq $s1, 255, right #check if left node
+    move $a1, $s1
+    lw $a0, 0($sp)
+    jal preorder
+
+    
+right:
+    beq $s2, 255, preorder_end
+    move $a1, $s2
+    lw $a0, 0($sp)
+    jal preorder
+preorder_end:
+    lw $s0, 12($sp) #value
+    lw $s1, 16($sp) #left
+    lw $s2, 20($sp)#right
+    lw $ra, 8($sp)
+    	addi $sp, $sp,24
+	jr $ra
+
+position:
+    #Define your code here
+    addi $sp, $sp,-36
+    sw $a0, 0($sp) #node
+    sw $a1, 4($sp) #index
+    sw $s0, 12($sp) #value
+    sw $s1, 16($sp) #left
+    sw $s2, 20($sp)#right
+    sw $a2, 24($sp)#newValue
+    sw $s4, 28($sp)#leftindex
+    sw $s5, 32($sp)#rightindex
+    sw $ra, 8($sp)
+
+	sll $t1, $a1, 2
+    add $a0, $t1, $a0
+    lhu $s0, 0($a0) #the value
+    lbu $s1, 3($a0)#left
+    lbu $s2, 2($a0)#right
+    
+    bge $a2, $s0, position_else #newvalue<value
+    move $s4, $s1 #left to left index
+    bne $s4, 255, inside_else
+    move $v0, $a1 #return(index, 0)
+    li $v1, 0
+    j position_epo
+    
+inside_else:
+
+    move $a1, $s4
+    lw $a0, 0($sp)
+    jal position
+    j position_epo
+    
+position_else:
+    move $s5, $s2 #rightto rightindex
+    bne $s5, 255, position_else2
+    lw $a1, 4($sp)
+    move $v0, $a1
+    li $v1, 1
+    j position_epo
+    
+position_else2:
+    lw $a0, 0($sp)
+    move $a1, $s5
+    lw $a2, 24($sp) #newValue
+    jal position
+    j position_epo
+    
+position_epo:
+    lw $s0, 12($sp) #value
+    lw $s1, 16($sp) #left
+    lw $s2, 20($sp)#right
+    lw $s4, 28($sp)#leftindex
+    lw $s5, 32($sp)#rightindex
+    lw $ra, 8($sp)
+    	addi $sp, $sp, 36
+    jr $ra
+
+
+
+insertNode:
+     #Define your code here
+    addi $sp, $sp,-44
+    sw $a0, 0($sp) #node
+    sw $a1, 4($sp) #rootindex
+    sw $s0, 12($sp) #value
+    sw $s1, 16($sp) #left
+    sw $s2, 20($sp) #right
+    sw $a2, 24($sp)#newValue
+    sw $s3, 28($sp)#newindex
+    sw $s4, 32($sp)#parentindex
+    sw $s5, 36($sp)#left or right
+    sw $s6, 40($sp) #255
+    sw $ra, 8($sp)
+    
+    addi $s6, $0, 255
+	sll $t1, $a1, 2
+    add $a0, $t1, $a0
+    lw $t0, 0($a0)
+
+    bne $t0, -1, insert_else
+    sb $s6, 2($a0)
+    sb $s6, 3($a0)
+    sh $a2, 0($a0) #value = newvalue
+    li $v0, 1
+    j insert_epo
+    
+insert_else:
+    lw $a0, 0($sp)
+    jal find_empty
+    move $s3, $v0 #newindex = findvalue
+    bge $s3, 0, insert_if
+    li $v0, 0
+    j insert_epo
+    
+insert_if:
+    lw $a0, 0($sp)
+    lw $a1, 4($sp)
+    lhu $a2, 24($sp)
+    jal position
+    move $s4, $v0 #parent
+    move $s5, $v1 #left or right
+    
+    bne $s5, 0, insert_else2 #left or right 
+    lw $a0, 0($sp)
+    sll $t4, $s4, 2
+    add $a0, $t4, $a0 #parentindex
+    
+    sb $s3, 3($a0) #left = newIndex
+    j create
+insert_else2:
+    sb $s3, 2($a0) #right = newindex parent
+    
+    #newindex
+create:
+    lw $a0, 0($sp)
+    sll $t3, $s3, 2
+    add $a0, $t3, $a0
+  
+    sb $s6, 2($a0)
+    sb $s6, 3($a0)
+    lhu $a2, 24($sp)
+    sh $a2, 0($a0) #value = newindex
+    li $v0, 1
+insert_epo:
+
+    lw $s0, 12($sp) #value
+    lw $s1, 16($sp) #left
+    lw $s2, 20($sp)#right
+    lw $s3, 28($sp)#newindex
+    lw $s4, 32($sp)#parentindex
+    lw $s5, 36($sp)#left or right
+    lw $s6, 40($sp) #255
+    lw $ra, 8($sp)
+    addi $sp, $sp,44
+	jr $ra
+
+
+find_parent:
+    addi $sp, $sp,-44
+    sw $a0, 0($sp) #node
+    sw $a1, 4($sp) #currentindex
+    sw $a2, 8($sp)#childindex
+    sw $s0, 12($sp) #value
+    sw $s1, 16($sp) #curnode left
+    sw $s2, 20($sp) #curnode right
+    sw $s3, 24($sp)#childvalue
+    sw $s4, 28($sp)#leftindex
+    sw $s5, 32($sp)#rightindex
+    sw $s6, 36($sp) #255
+    sw $ra, 40($sp)
+    
+    sll $t2, $a2, 2
+    add $a0, $t2, $a0
+    lhu $s3, 0($a0) #the child value
+    addi $s6, $0, 255
+    
+    lw $a0, 0($sp)
+    sll $t1, $a1, 2
+    add $a0, $t1, $a0
+    lhu $s0, 0($a0) #curnode value
+    lbu $s1, 3($a0)#curnode left
+    lbu $s2, 2($a0)#curnode right
+    
+    bge $s3, $s0, parent_else
+    move $s4, $s1 #leftindex = curnode left
+    bne $s4, 255, parent_elseif
+    li $v0, -1
+    li $v1, -1
+    j parent_epo
+    
+parent_elseif:
+    bne $s4, $a2, parent_inside_else
+    lbu $a1, 4($sp)
+    move $v0, $a1 #return currentnode index
+    li $v1, 0
+    j parent_epo
+    
+parent_inside_else:
+    lw $a0, 0($sp)
+    move $a1, $s4 #move leftindex to curnode index
+    jal find_parent
+    j parent_epo
+    
+parent_else:
+    move $s5, $s2 #move curnode right to right index
+    bne $s5, 255, parent_elseif2
+    li $v0, -1
+    li $v1, -1
+    j parent_epo
+    
+parent_elseif2:
+    bne $s5, $a2, parent_else2
+    lbu $a1, 4($sp)
+    move $v0, $a1 #return currentnode index
+    li $v1, 1
+    j parent_epo
+    
+parent_else2:
+    lw $a0, 0($sp)
+    move $a1, $s5 #move leftindex to curnode index
+    lbu $a2, 8($sp)
+    jal find_parent
+    
+parent_epo:
+    lw $s0, 12($sp) #value
+    lw $s1, 16($sp) #curnode left
+    lw $s2, 20($sp) #curnode right
+    lw $s3, 24($sp)#childvalue
+    lw $s4, 28($sp)#leftindex
+    lw $s5, 32($sp)#rightindex
+    lw $s6, 36($sp) #255
+    lw $ra, 40($sp)
+    addi $sp, $sp,44
+
+    ###########################################
+    jr $ra
+
+min:
+    #Define your code here
+    ############################################
+    # DELETE THIS CODE. Only here to allow main program to run without fully implementing the function
+    addi $sp, $sp, -24
+    sw $a0, 0($sp) #node
+    sw $a1, 4($sp) #currentindex
+    sw $s0, 8($sp)#left
+    sw $s1, 12($sp)
+    sw $s2, 16($sp)
+    sw $ra, 20($sp)
+    
+    sll $t1, $a1, 2
+    add $a0, $t1, $a0
+    
+    lbu $s0, 3($a0) #left
+    lbu $s1, 2($a0) #right
+    bne $s0, 255, min_else
+    move $v0, $a1
+    beq $s1, 255, return_one
+    li $v1, 0
+    j min_epo
+    
+return_one:
+    li $v1, 1
+    j min_epo
+    
+min_else:
+    lw $a0, 0($sp)
+    move $a1, $s0
+    jal min
+min_epo:
+	lw $s0, 8($sp)#left
+    lw $s1, 12($sp)
+    lw $s2, 16($sp)
+    lw $ra, 20($sp)
+    addi $sp, $sp, 24
+    
+    ###########################################
+    jr $ra
+
+deleteNode:
+    #Define your code here
+    addi $sp, $sp,-44
+    sw $a0, 0($sp) #node
+    sw $a1, 4($sp) #rootindex
+    sw $s0, 12($sp) #value
+    sw $s1, 16($sp) #left
+    sw $s2, 20($sp) #right
+    sw $a2, 24($sp)#deleteindex
+    sw $s3, 28($sp)#childindex
+    sw $s4, 32($sp)#parentindex
+    sw $s5, 36($sp)#left or right
+    sw $s6, 40($sp) #255
+    sw $ra, 8($sp)
+    
+    addi $s6, $0, 255
+	sll $t2, $a2, 2
+    add $a0, $t2, $a0
+    lw $t0, 0($a0)
+    lbu $s1, 3($a0) #left of delete index
+    lbu $s2, 2($a0) #right
+    bne $s1, 255, delete_else_if
+    bne $s2, 255, delete_else_if
+    
+    bne $a1, $a2, delete_parent #if deleteindex == rootindex
+    li $t1, -1
+    sw $t1, 0($a0) #nodes[delete index] = -1
+    j delete_epo
+    
+delete_parent:
+	lw $a0, 0($sp)
+	lw $a1, 4($sp)
+	lw $a2, 24($sp)
+	jal find_parent
+	move $s4, $v0 #parentindex
+	move $s5, $v1 #leftorright
+	
+	lw $a0, 0($sp)
+	sll $t4, $s4, 2
+	add $a0, $t4, $a0
+	lw $t8, 0($a0) #parent index node $t8------------------
+	
+	bne $s5, 0, d_else
+	sb $s6, 3($a0) #parentindex left
+	j delete_node
+d_else:	
+	sb $s6, 2($a0) #parentindex right
+	
+delete_node:
+	lw $a0, 0($sp)
+	sll $t2, $a2, 2
+	add $a0, $t2, $a0
+    	lw $t6, 0($a0) #delete index node $t6-----------------
+	li $t1, -1
+    sw $t1, 0($a0) #nodes[delete index] = -1
+    j delete_epo
+    
+delete_else_if:
+	bne $s1, 255, no_child #left == 255
+	bne $s2, 255, right_child #right != 255
+	j last_else
+no_child:
+	beq $s2, 255, left_child #right ==255, left != 255
+	j last_else #right !=255, left != 255
+	
+left_child:
+	move $s3, $s1
+	j d_next_if
+	
+right_child:
+	move $s3, $s2 #childindex
+	
+d_next_if:
+	lw $a1, 4($sp)
+	lw $a2, 24($sp)
+	bne $a1, $a2, not_root #deleteindex == rootindex
+	
+	lw $a0, 0($sp)
+	sll $t3, $s3, 2 #child index
+	add $a0, $t3, $a0
+	lw $t7, 0($a0) # childnode = nodes[childindex] $t7-----------------
+	
+	lw $a0, 0($sp)
+	sll $t2, $a2, 2 #delete index
+	add $a0, $t2, $a0
+	sw $t7, 0($a0) #node deleteindex = childnode
+
+	
+	lw $a0, 0($sp)
+	sll $t3, $s3, 2 #child index
+	add $a0, $t3, $a0
+	li $t0, -1
+	sw $t0, 0($a0) #node[childindex] = -1
+	j delete_epo
+	
+not_root:
+	lw $a0, 0($sp)
+	lw $a1, 4($sp)
+	lw $a2, 24($sp)
+	jal find_parent
+	
+	move $s4, $v0 #parentindex
+	move $s5, $v1 #leftorright
+	
+	lw $a0, 0($sp)
+	sll $t4, $s4, 2 #parentindex node
+	add $a0, $t4, $a0
+	bne $s5, 0, change_parent
+	sb $s3, 3($a0)
+	j skip_change
+change_parent:
+	sb $s3, 2($a0) #node[parentindex].right = childindex
+	
+skip_change:
+	lw $a0, 0($sp)
+	sll $t2, $a2, 2 #delete index
+	add $a0, $t2, $a0
+	li $t0, -1
+	sw $t0, 0($a0)
+	j delete_epo
+	
+last_else:
+	lw $a0, 0($sp)
+	sll $t2, $a2, 2 #delete index
+	add $a0, $t2, $a0
+	lbu $a1, 2($sp)
+	lw $a0, 0($sp)
+	jal min
+	move $t6, $v0 #min index
+	move $t5, $v1 #mind isleaf
+	
+	#get the parent
+	lw $a0, 0($sp)
+	lw $a1, 4($sp)
+	lw $a2, 24($sp)
+	jal find_parent
+	move $s4, $v0
+	move $s5, $v1
+	
+	#if minisleaf == true
+	lw $a0, 0($sp)
+	sll $t4, $s4, 2
+	add $a0, $t4, $a0
+	
+	bne $t5, 1, subtree
+	bne $s5, 0, right_parent
+	
+	sb $s6, 3($a0) #node left = 255
+	j last_part
+	
+right_parent:
+	sb $s6, 2($a0) #node right = 255
+	j last_part
+	
+subtree:
+	lw $a0, 0($sp)
+	sll $t6, $t6, 2
+	add $a0, $t6, $a0
+	lbu $t1, 2($a0) #node[min index] right
+	lhu $t3, 0($a0) #min index value
+	
+	bne $s5, 0, change_parent2
+	lw $a0, 0($sp)
+	sll $t4, $s4, 2
+	add $a0, $t4, $a0 
+	sb $t1, 3($a0) #parent index left = node[min index] right
+	j last_part
+	
+change_parent2:
+	lw $a0, 0($sp)
+	sll $t4, $s4, 2
+	add $a0, $t4, $a0 
+	sb $t1, 2($a0) #parent index right = node[min index] right
+
+last_part:
+	lw $a0, 0($sp)
+	sll $t2, $a2, 2
+	add $a0, $t2, $a0
+	sh $t3, 0($a0) #node[delete index].value = min index value
+	
+	lw $a0, 0($sp)
+	sll $t6, $t6, 2
+	add $a0, $t6, $a0
+	li $t0, -1
+	sw $t0, 0($a0)
+delete_epo:
+	lw $s1, 16($sp) #left
+    lw $s2, 20($sp) #right
+    lw $s3, 28($sp)#newindex
+    lw $s4, 32($sp)#parentindex
+    lw $s5, 36($sp)#left or right
+    lw $s6, 40($sp) #255
+    lw $ra, 8($sp)
+    addi $sp, $sp, 44
+    jr $ra
+
+.include "hw3_helpers.asm"

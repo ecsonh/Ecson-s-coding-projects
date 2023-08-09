@@ -1,0 +1,109 @@
+#include "Direction.hpp"
+#include "MazeSolution.hpp"
+#include "MazeSolver.hpp"
+#include "Maze.hpp"
+#include "EHMaveSolver.hpp"
+#include <ics46/factory/DynamicFactory.hpp> 
+
+#include <algorithm>
+ICS46_DYNAMIC_FACTORY_REGISTER(MazeSolver, EHMazeSolver, "EHMazeSolver(Required)");
+EHMazeSolver::EHMazeSolver()
+{
+
+}
+
+void EHMazeSolver::solveMaze(const Maze& maze, MazeSolution& mazeSolution)
+{
+    mazeSolution.restart();
+    std::pair<int, int> start = mazeSolution.getStartingCell();
+    getCell(maze.getHeight(), maze.getWidth());
+    solvePath(std::get<0>(start), std::get<1>(start), maze, mazeSolution);
+}
+
+void EHMazeSolver::getCell(int x, int y)
+{
+    std::vector<std::vector<int>> a(y, std::vector<int>(x));
+    for (int i = 0; i < y; ++i)
+    {
+        for (int j = 0; j < x; ++j)
+        {
+            a[i][j] = 0;
+        }
+    }
+    visited = a;
+}
+
+std::vector<Direction> EHMazeSolver::possible_move(int x, int y, const Maze& maze)
+{
+    std::vector<Direction> possibleMove;
+    if(y >= 1 && visited[x][y-1] == 0 && !maze.wallExists(x, y, Direction::up))
+    {
+        possibleMove.push_back(Direction::up);
+    }
+    if(y < maze.getHeight()-1 && visited[x][y+1] == 0  && !maze.wallExists(x, y, Direction::down))
+    {
+        possibleMove.push_back(Direction::down);
+    }
+    if(x < maze.getWidth()-1 && visited[x+1][y] == 0  && !maze.wallExists(x, y, Direction::right))
+    {
+        possibleMove.push_back(Direction::right);
+    }
+    if(x >= 1 && visited[x-1][y] == 0  && !maze.wallExists(x, y, Direction::left))
+    {
+        possibleMove.push_back(Direction::left);
+    }
+    return possibleMove;
+}
+
+void EHMazeSolver::find_direction(int& x, int& y, Direction& dir)
+{
+ 
+    if(dir == Direction::up)
+    {
+        y = y-1; 
+    }
+    else if(dir == Direction::down)
+    {
+        y = y+1;
+    }
+    else if(dir == Direction::right)
+    {
+        x = x+1;
+    }
+    else if(dir == Direction::left)
+    {
+        x = x-1;
+    }
+}
+
+void EHMazeSolver::solvePath(int x, int y , const Maze& maze, MazeSolution& mazeSolution)
+{
+    std::pair<int, int> ending = mazeSolution.getEndingCell();
+    std::pair<int, int> current (x,y);
+    
+    if(current != ending)
+    {
+        int nextx = x;
+        int nexty = y;
+        visited[x][y] = 1;// current cell visit
+
+        std::vector<Direction> p = possible_move(x, y, maze);
+        if(p.size() != 0)//till no where to go like corner
+        {
+            find_direction(nextx,nexty, p[0]); // always try the first possible move
+            mazeSolution.extend(p[0]);
+            tracking.push_back(current);
+            solvePath(nextx, nexty, maze, mazeSolution);
+        }
+        else
+        {
+            mazeSolution.backUp();
+            x = std::get<0>(tracking.back());
+            y = std::get<1>(tracking.back());
+            tracking.pop_back();
+            solvePath(x, y, maze, mazeSolution);
+        }
+        
+        
+    }
+}

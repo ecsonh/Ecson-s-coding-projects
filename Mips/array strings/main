@@ -1,0 +1,229 @@
+
+# Ecson Hsu
+# ecsonh
+
+.text
+
+reverseString:
+    addi $t0, $0, 0 #length
+length:
+    add $t2, $a0, $t0 # string for counting length
+    lb $t1, 0($t2)
+    beqz $t1, length_end
+    addi $t0, $t0, 1
+    j length
+length_end:
+    move $v1, $t0 #move the string length to v1
+    move $t3, $a1
+    add $t5, $a1, $t0
+    sb $0, 0($t5)
+    addi $t2, $t2, -1
+reverse_loop:
+    lb $t4,0($t2)   
+    sb $t4,0($t3)
+    beq $t2, $a0, reverse_done
+    addi $t2, $t2, -1  #get the previous char
+    addi $t3, $t3, 1
+
+    j reverse_loop
+reverse_done:
+    jr $ra
+
+shiftCipher:
+    addi $t1, $0, 0 #count the loop
+    addi $t2, $0, 0 #count the length
+    move $t3, $a1
+    
+
+    
+cipher_loop:
+    lb $t4, 0($a0) #load char from  the string 
+    beqz $t4, cipher_done
+    add $t5, $t4, $t3 #char + num
+    beq $t4, ' ', pass
+    bgt $t4, 0x39, char
+    blt $t4, 0x2c, char
+    j pass
+char:   
+    addi $t1, $t1, 1
+    ble $t4, 0x5a, capital
+    bge $t4, 0x61, small
+capital:
+    ble $t5, 0x40, plus
+    ble $t5, 0x5b, add_num
+    addi $t5, $t5, -26
+    move $t4, $t5
+    j pass
+small:
+    ble $t5, 0x60, plus
+    ble $t5, 0x7b, add_num
+    addi $t5, $t5, -26
+    move $t4, $t5
+    j pass
+plus: 
+    addi $t5, $t5, 26
+    move $t4, $t5
+    j pass
+add_num:
+    add $t4, $t4, $t3 #add the number
+pass:
+
+    sb $t4, 0($a0)
+    addi $a0, $a0, 1
+    addi $t2, $t2, 1
+    j cipher_loop
+    
+cipher_done:
+    move $v0, $t2
+    move $v1, $t1
+    jr $ra
+
+
+
+
+countMultipleOf:
+    blt $a2, $0, mult_error
+    blt $a1, $0, mult_error
+    move $t0, $a1 #length
+    addi $t5, $0, 0
+    addi $t1, $0, 0 # largest value
+multiple_loop:
+    lw $t2, 0($a0) #get the number in array
+    beqz $t0, multiple_done
+    div $t2, $a2
+    mfhi $t3
+    bnez $t3, less # if the remainder is not 0
+    beqz $t2, less
+    addi $t5, $t5, 1 #count multiple
+    blt $t2, $t1, less #compare the value
+    move $t1, $t2 #save the largest value
+    
+ 
+less:
+    addi $a0, $a0, 4 # go through the loop
+    addi $t0, $t0, -1 #subtract length by 1
+    j multiple_loop
+mult_error:
+    li $v0, -1
+    li $v1, -1
+    jr $ra
+
+multiple_done:
+    move $v0, $t5
+    move $v1, $t1
+    jr $ra
+
+
+
+sumOfSubArray:
+    blt $a3, $a2, sub_error
+    ble $a1, $0, sub_error #n<=0
+    blt $a2, $0, sub_error
+    bge $a2, $a1, sub_error #i =a2, j = a3
+    blt $a3, $0, sub_error
+    bge $a3, $a1, sub_error
+    addi $t0, $0, 0 #count index
+    addi $t5, $0, 0 # sum
+sub_loop:
+    bgt $t0, $a3, sub_done # current index > j
+    bge $t0, $a2, again  #current index >= i
+    
+    addi $a0, $a0, 4 #next array
+    addi $t0, $t0, 1# index +1
+    j sub_loop
+again:
+    lw $t4, 0($a0)
+    add $t5, $t5, $t4 # add num
+    addi $a0, $a0, 4 #next array
+    addi $t0, $t0, 1# index +1
+    j sub_loop
+sub_error:
+    li $v0, -1
+    li $v1, -1
+    jr $ra
+sub_done:
+    li $v1, 0
+    move $v0, $t5
+    jr $ra
+
+statsOnStrings:
+#n = a1
+#c = a2
+    ble $a1, $0, stat_error
+    bgt $a2, 0x7f, stat_error
+    addi $t0, $0, 0 # count the number of string
+    addi $t2, $0, 0 # count occurance
+    addi $t5, $0, 0 # count characters
+    addi $t7, $0, 0 
+stat_loop:
+    add $t2, $t2, $t7 #fine the char in string
+    addi $t7, $0, 0
+    beq $t0, $a1, stat_done
+    lw $t3, 0($a0)
+    addi $a0, $a0, 4
+    addi $t0, $t0, 1 #count the number of string
+    
+char_loop:
+    lb $t4, 0($t3)
+    addi $t3, $t3, 1
+    beq $t4,$0, stat_loop # if it's nothing in $t4
+    addi $t5, $t5, 1 # count character
+    bne $t4, $a2, char_loop #if byte not equal the char then loop
+    addi $t7, $0, 1
+    j char_loop
+stat_error:
+    li $v0, -1
+    li $v1, -1
+    jr $ra
+stat_done:
+    move $v0, $t5
+    move $v1, $t2
+    jr $ra
+
+
+int2BCD:
+    # your code goes here
+    addi $t8, $0, 99999999
+    addi $t9, $0, -99999999
+    bgt $a0, $t8, bcd_error
+    blt $a0, $t9, bcd_error
+    addi $t0, $0, 0x00000000 #r
+    bgt $a0, $0, next1
+    sub $a0, $0, $a0 # the positive number
+next1:
+    addi $t1, $0, -1 #k=0
+bcd_loop:
+    addi $t1, $t1, 1 # k++   #this might be a problem
+    bge $t1, 32, bcd_done #end the loop
+    addi $t2, $0, 0 #msb
+    bge $a0, $0, shift #v<0
+    addi $t2, $0, 1
+shift:
+    sll $a0, $a0, 1
+    sll $t0, $t0, 1 
+    beqz $t2, not_msp #if msb
+    addi $t0, $t0, 1 #r =r+1
+not_msp:
+    bge $t1, 31, bcd_loop
+    beqz $t0, bcd_loop
+    addi $t3, $0, 0xf0000000 #mask
+    addi $t4, $0, 0x40000000 #cmp
+    addi $t5, $0, 0x30000000 #add
+    addi $t6, $0, 0 #i =0
+inside_loop:
+    bge $t6, 8, bcd_loop
+    and $t7, $t0, $t3 #mv
+    addi $t6, $t6, 1 #inside lopp i++
+    ble $t7, $t4, skip #mv>cmp
+    add $t0, $t0, $t5 
+skip:
+    srl $t3, $t3, 4
+    srl $t4, $t4, 4
+    srl $t5, $t5, 4
+    j inside_loop
+bcd_error:
+    li $v0, -1
+    jr $ra
+bcd_done:
+    move $v0, $t0
+    jr $ra
