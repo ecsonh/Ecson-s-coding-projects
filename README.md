@@ -1,6 +1,6 @@
 # Ecson-s-coding-projects
 #READ ME
-This #ecson-s-coding-project repository includes the class projects from UCI computer science class. All the work is done by myself in this repository. 
+This #ecson-s-coding-project repository includes the projects I've completed in the past 3 years. All the work is done by myself in this repository. 
 
 DG4M is a project that I worked on with a present UCI phD student. This project is to write a program for a wearable health device that can identify the current activity that the user is doing. In this project, I implemented machine learning models and data structuring functions using Python to build a program that analyzes the ongoing activities of the participants who wear the health device.
 
