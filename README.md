@@ -1,5 +1,5 @@
 # Ecson-s-coding-projects
-#READ ME
+## READ ME
 #### This repository includes the projects I've completed in the past 3 years. All the work is either done by myself or collaborated with other teammmembers.
 #### Link to My Portfolio: https://ecsonh.github.io/dist/index.html
 
